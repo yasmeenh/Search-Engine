@@ -546,6 +546,7 @@ public class Indexer implements Runnable {
 			s[3]=img;
 			s[0]=s[0].replaceAll("[^A-Za-z]"," ");
 			s[1]=s[1].replaceAll("[^A-Za-z]"," ");
+			s[2]=s[2].replaceAll("[^A-Za-z]"," ");
 		} finally {
 		    inputStream.close();
 		}
