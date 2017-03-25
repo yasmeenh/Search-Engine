@@ -24,11 +24,11 @@ public class Main {
 
             if (update) {
                 update = false;
-                ct.setMaxPagesNumber(ct.getNoOfVisitedPages() + 20);
+                ct.setMaxPagesNumber(ct.getNoOfVisitedPages() + 17);
                 ct.Update();
 
             } else
-                ct.setMaxPagesNumber(20);
+                ct.setMaxPagesNumber(17);
 
 
             if (ct.isEmptyDatabase()) {
@@ -81,10 +81,7 @@ public class Main {
             Indexthread2.join();
             T0.sleep(180000000);   //259200000
             update = true;
-            //Crawlerthread.start();
-            //System.out.println("Crawler start indexer wait");
-            //	System.out.println("Indexer start ");
-            //Indexthread.start();
+
         }
     }
 
