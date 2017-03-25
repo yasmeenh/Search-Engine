@@ -414,11 +414,6 @@ public class Crawler implements Runnable {
         String url = null, normalizedUrl = null;
         int stopNumber = getMaxPagesNumber();
 
-        try {
-            stopNumber += getNoOfVisitedPages();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
 
 
         while (!pagesToVisit.isEmpty() && pagesVisited.size() < stopNumber) {
