@@ -15,34 +15,36 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 
-import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-public class CrawlerTest implements Runnable {
+public class Crawler implements Runnable {
 
 
-    private static final int maxPagesNumber = 15;
+    private static int maxPagesNumber ;
     private Set<String> pagesVisited = new HashSet<String>();
     private List<String> pagesToVisit = new LinkedList<String>();
     private HashMap disallowListCache = new HashMap();
-    private static Database db = new Database();
+    public static Database db = new Database();
     public DefaultUrlCanonicalizer urlCanonicalizer = new DefaultUrlCanonicalizer();
     private Object lock = new Object();
 
+    public void setMaxPagesNumber(int maxPagesNumber) {
+        this.maxPagesNumber = maxPagesNumber;
+    }
 
-    public static int getMaxPagesNumber() {
+    public int getMaxPagesNumber() {
         return maxPagesNumber;
     }
 
-//////*******************Tasneem changed here and at saveHTMLInFile where I check for availability of url before insert it and auto increment the key///////
+    //////*******************Tasneem changed here and at saveHTMLInFile where I check for availability of url before insert it and auto increment the key///////
     public int setSeeds(String[] seeds) throws SQLException, IOException, URISyntaxException {
 
 
         for (int i = 0; i < seeds.length; i++) {
-            if ((!compareInsensitivelyHash(pagesVisited,NormalizeURL(seeds[i]))) && CheckRobotTxt(seeds[i])) {
+            if ((!compareInsensitivelyHash(pagesVisited, NormalizeURL(seeds[i]))) && CheckRobotTxt(seeds[i])) {
                 synchronized (pagesToVisit) {
                     this.pagesToVisit.add(seeds[i]);
                 }
@@ -50,19 +52,18 @@ public class CrawlerTest implements Runnable {
                 ///////*****************************************************************************************************//
                 saveHTMLInFile(seeds[i]);
                 ///////****************************************************************************************************//
-                
+
             }
         }
         return seeds.length;
     }
 
 
-    public boolean compareInsensitivelyHash(Set<String> h,String s)
-    {
+    public boolean compareInsensitivelyHash(Set<String> h, String s) {
 
         Iterator<String> it = h.iterator();
-        while(it.hasNext()){
-            if(s.equalsIgnoreCase(it.next()))
+        while (it.hasNext()) {
+            if (s.equalsIgnoreCase(it.next()))
                 return true;
         }
 
@@ -70,12 +71,11 @@ public class CrawlerTest implements Runnable {
     }
 
 
-    public boolean compareInsensitivelyLinkedlist(List<String> l, String s)
-    {
+    public boolean compareInsensitivelyLinkedlist(List<String> l, String s) {
 
         for (int i = 0; i < l.size(); i++) {
 
-            if(s.equalsIgnoreCase(l.get(i)))
+            if (s.equalsIgnoreCase(l.get(i)))
                 return true;
         }
         return false;
@@ -83,38 +83,37 @@ public class CrawlerTest implements Runnable {
     }
 
     //***************************Tasneem changes here to handle some errors******************/////////
-    public Document JsoupConnection(String URL)  {
+    public Document JsoupConnection(String URL) {
 
-        if (!URL.isEmpty() && URL.length()>0) {
+        if (!URL.isEmpty() && URL.length() > 0) {
             Document response;
-			try {
-				response = Jsoup
-				        .connect(URL)
-				        .ignoreContentType(true)
-				        .userAgent("Mozilla")
-				        .referrer("http://www.google.com")
-				        .followRedirects(true)
-		/**********/   .post();//****************************//
-			 
-            //.connect(URL).timeout(0).get();
-            //String contentType = response.contentType();
+            try {
+                response = Jsoup
+                        .connect(URL)
+                        .ignoreContentType(true)
+                        .userAgent("Mozilla")
+                        .referrer("http://www.google.com")
+                        .followRedirects(true)
+                        .timeout(0)
+                        /**********/.post();//****************************//
 
-            if (response != null)
-            {
-            	//******************************************//
-                return response;//.parse();
-                //******************************************//
-            }
-                else
+                //.connect(URL).timeout(0).get();
+                //String contentType = response.contentType();
+
+                if (response != null) {
+                    //******************************************//
+                    return response;//.parse();
+                    //******************************************//
+                } else
+                    return null;
+
+
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
                 return null;
-        
-       
-        }catch (Exception e) {
-			// TODO Auto-generated catch block
-			return null;
-		}
+            }
         }
-		return null;
+        return null;
     }
 
     public boolean CheckRobotTxt(String URL) throws IOException {
@@ -165,14 +164,14 @@ public class CrawlerTest implements Runnable {
             for (int i = 0; i < disallowList.size(); i++) {
                 if (((ArrayList) disallowListCache.get(host)).contains(file)) {
                     //pagesToVisit.remove(0);
-                  //  System.out.println("Url: " + URL + "no");
+                    //  System.out.println("Url: " + URL + "no");
 
                     return false;
                 }
             }
         }
 
-      //  System.out.println("Url: " + URL + "yes");
+        //  System.out.println("Url: " + URL + "yes");
         return true;
 
     }
@@ -188,10 +187,10 @@ public class CrawlerTest implements Runnable {
     }
 
     public String getFirstUnvisitedPage() throws SQLException {
-       // System.out.println("getFirstUnvisitedPage: Hello from " + Thread.currentThread().getName());
+        // System.out.println("getFirstUnvisitedPage: Hello from " + Thread.currentThread().getName());
         String sql = "Select URL FROM `Crawler`.`webpage` WHERE firstUnvisitedPage = 0 order by PageID limit 1";
-        ResultSet rs;
-        rs = db.runSql(sql);
+        Statement st = db.conn.createStatement();
+        ResultSet rs = st.executeQuery(sql);
         String url = null;
         while (rs.next()) {
 
@@ -201,7 +200,8 @@ public class CrawlerTest implements Runnable {
         return url;
 
     }
-////////////////************************Tasneem change the query so that if the url there don't write it nether get error***************//
+
+    ////////////////************************Tasneem change the query so that if the url there don't write it nether get error***************//
     private void insertInDatabase(String URL) throws SQLException {
         String sql;
 
@@ -218,20 +218,19 @@ public class CrawlerTest implements Runnable {
         //The execute method returns a boolean to indicate the form of the first result.
         //true if the first result is a ResultSet object; false if the first result is an update count or there is no result
         statement.execute();
-      //  System.out.println("Insertion: Hello from " + Thread.currentThread().getName());
+        //  System.out.println("Insertion: Hello from " + Thread.currentThread().getName());
 
     }
 
     private String NormalizeURL(String c) throws URISyntaxException, MalformedURLException {
 
-      
 
         //****************************************
 
 
-       // c = c.toLowerCase();
+        // c = c.toLowerCase();
         String url = urlCanonicalizer.canonicalize(c);
-      //  System.out.println("Normalized:   " + url);
+        //  System.out.println("Normalized:   " + url);
 
 
         //****************************************
@@ -249,25 +248,27 @@ public class CrawlerTest implements Runnable {
 
             id = rs.getInt("PageID");
         }
-       // System.out.println("url: " + url + "  id: " + id);
+        // System.out.println("url: " + url + "  id: " + id);
         rs.close();
         return id;
     }
-///////////**************************Tasneem changes here 1.check if the url found and work before save it at database 2.then if it is ok save it and write file
+
+    ///////////**************************Tasneem changes here 1.check if the url found and work before save it at database 2.then if it is ok save it and write file
     private void saveHTMLInFile(String url) throws IOException, SQLException {
 
         if (url != null) {
             Document ss = JsoupConnection(url);
-            if (ss != null) {
-            	String s=ss.toString();
-            	 insertInDatabase(url);
-            	System.out.println("write file  "+getID(url));
+            if (ss != null /*&& ss.toString().matches(".*\\<[^>]+>.*")*/) {
+                String s = ss.toString();
+                insertInDatabase(url);
+                System.out.print("Thread no. " + Thread.currentThread().getName() + " ");
+                System.out.println("writes file no. " + getID(url));
                 int id = getID(url);
                 FileWriter writer = new FileWriter(String.valueOf(id), true);
                 writer.write(s);
                 writer.write("\r\n");   // write new line
                 writer.close();
-               
+
             }
         }
     }
@@ -275,49 +276,70 @@ public class CrawlerTest implements Runnable {
 
     private void Crawl(String url) throws URISyntaxException, IOException, SQLException {
         if (url != null) {
-           // System.out.println("From crawl: Hello from " + Thread.currentThread().getName());
+            // System.out.println("From crawl: Hello from " + Thread.currentThread().getName());
 
-            String normalizedUrl = NormalizeURL(url);
             //System.out.println("after crawl: Hello from " + Thread.currentThread().getName());
 
 
             Document doc = JsoupConnection(url);
-            if(doc!=null)
-            {
-            getLinks(doc);
-            synchronized (pagesToVisit) {
+            if (doc != null) {
+                getLinks(doc);
+                synchronized (pagesToVisit) {
 
-                int index = pagesToVisit.indexOf(url);
-                if (!pagesToVisit.isEmpty()&& index>=0)
-                    pagesToVisit.remove(index);
-            }
-            synchronized (pagesVisited) {
-                this.pagesVisited.add(normalizedUrl);
-            }
+                    int index = pagesToVisit.indexOf(url);
+                    if (!pagesToVisit.isEmpty() && index >= 0)
+                        pagesToVisit.remove(index);
+                }
+                synchronized (pagesVisited) {
+                    this.pagesVisited.add(url);
+                }
             }
 
-            
 
             //System.out.println("Visited Visited Visited Visited ^_^  !!!!!");
 
         }
     }
 
+    public static boolean isEmptyDatabase() throws SQLException {
+
+        String query = "select count(*) from Crawler.webPage";
+        PreparedStatement st = db.conn.prepareStatement(query);
+        ResultSet rs = st.executeQuery();
+        int numberRow = 0;
+        while (rs.next()) {
+            numberRow = rs.getInt("count(*)");
+        }
+        if (numberRow == 0)
+            return true;
+        return false;
+    }
+
+    public int getNoOfVisitedPages() throws SQLException {
+        String query = "select count(*) from Crawler.webPage WHERE firstUnvisitedPage = 1";
+        PreparedStatement st = db.conn.prepareStatement(query);
+        ResultSet rs = st.executeQuery();
+        int numberRow = 0;
+        while (rs.next()) {
+            numberRow = rs.getInt("count(*)");
+        }
+        return numberRow;
+    }
 
     private void getLinks(Document doc) throws SQLException, IOException, URISyntaxException {
 
 
         Elements linksOnPage = doc.select("a[href]");
-      //  System.out.println("Found (" + linksOnPage.size() + ") links");
+        //  System.out.println("Found (" + linksOnPage.size() + ") links");
         for (Element link : linksOnPage) {
             //System.out.println("From getLinks: Hello from " + Thread.currentThread().getName());
 
             String normalized = NormalizeURL(link.absUrl("href"));
-           // System.out.println("after getLinks: Hello from " + Thread.currentThread().getName());
+            // System.out.println("after getLinks: Hello from " + Thread.currentThread().getName());
 
             synchronized (pagesToVisit) {
                 synchronized (pagesVisited) {
-                    if ( (!compareInsensitivelyLinkedlist(pagesToVisit,normalized)) && (!compareInsensitivelyHash(pagesVisited,normalized)) && CheckRobotTxt(link.absUrl("href"))) {
+                    if ((!compareInsensitivelyLinkedlist(pagesToVisit, normalized)) && (!compareInsensitivelyHash(pagesVisited, normalized)) && CheckRobotTxt(link.absUrl("href"))) {
 
                         pagesToVisit.add(normalized);
                         try {
@@ -332,74 +354,118 @@ public class CrawlerTest implements Runnable {
         }
     }
 
-    public static void main(String[] args) throws IOException, URISyntaxException, SQLException, InterruptedException {
+    public void selectVisitedPagesFromDatabase() throws SQLException {
+        String sql = "Select * FROM `Crawler`.`webpage` WHERE firstUnvisitedPage = 1 ";
+        Statement st = db.conn.createStatement();
+        ResultSet rs = st.executeQuery(sql);
+        String url = null;
+        while (rs.next()) {
 
-        CrawlerTest ct = new CrawlerTest();
-        Scanner scanner = new Scanner(System.in);
-        //db.runSql2("TRUNCATE webpage;");
+            pagesVisited.add(rs.getString("URL"));
+        }
+        rs.close();
+    }
 
+    public void Update() throws SQLException, IOException {
+        String sql = "Select * FROM `Crawler`.`webpage` ";
+        Statement st = db.conn.createStatement();
+        ResultSet rs = st.executeQuery(sql);
+        String url = null;
+        while (rs.next()) {
 
-        
+            if (rs.getString("URL") != null) {
+                Document ss = JsoupConnection(rs.getString("URL"));
+                if (ss != null /*&& ss.toString().matches(".*\\<[^>]+>.*")*/) {
+                    String s = ss.toString();
+                    System.out.print("Thread  " + Thread.currentThread().getName() + " ");
+                    System.out.println("updates file no. " + getID(rs.getString("URL")));
+                    int id = getID(rs.getString("URL"));
+                    FileWriter writer = new FileWriter(String.valueOf(id), true);
+                    writer.write(s);
+                    writer.write("\r\n");   // write new line
+                    writer.close();
 
-            String[] seeds = {"http://stackoverflow.com/", "https://en.wikipedia.org/wiki/Main_Page", "http://dmoztools.net/", "http://stackexchange.com/"/*,"http://www.msn.com/ar-eg/"*/, "http://www.webopedia.com/", "https://en.wikipedia.org/wiki/Cyclopedia", "https://www.amazon.com/", "https://www.facebook.com/", "http://www.wikihow.com/Main-Page", "https://www.pinterest.com/", "https://www.quora.com/", "http://eresources.nlb.gov.sg/infopedia/", "https://www.bing.com/"};
-
-            int noOfSeeds = ct.setSeeds(seeds);
-
-
-           // System.out.println("Please enter the number of Threads you want :)");
-            int noOfThreads = 1;//scanner.nextInt();
-
-            Thread T0 = Thread.currentThread();
-            T0.setName("Main Thread");
-
-            Thread[] T = new Thread[noOfThreads];
-
-
-            for (int i = 0; i < noOfThreads; i++) {
-
-                T[i] = new Thread(ct);
-                T[i].setName(Integer.toString(i + 1));
-                T[i].start();
-
+                }
+                rs.close();
             }
+        }
+    }
 
-            for (int i = 0; i < noOfThreads; i++) {
+    public void selectUnvisitedPagesFromDatabase() throws SQLException {
+        String sql = "Select * FROM `Crawler`.`webpage` WHERE firstUnvisitedPage = 0 ";
+        Statement st = db.conn.createStatement();
+        ResultSet rs = st.executeQuery(sql);
+        String url = null;
+        while (rs.next()) {
 
-                T[i].join();
+            pagesToVisit.add(rs.getString("URL"));
+        }
+        rs.close();
+    }
 
-            }
+    public static void main(String[] args) throws
+            IOException, URISyntaxException, SQLException, InterruptedException {
+
+
     }
 
     public void run() {
 
         String url = null, normalizedUrl = null;
+        int stopNumber = getMaxPagesNumber();
+
+        try {
+            stopNumber += getNoOfVisitedPages();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
 
-        //System.out.println(java.time.LocalTime.now());
+        while (!pagesToVisit.isEmpty() && pagesVisited.size() < stopNumber) {
 
 
-        while (!pagesToVisit.isEmpty() && pagesVisited.size() < getMaxPagesNumber()) {
-
-
-            try {
-                synchronized (lock) {
-
+            synchronized (lock) {
+                try {
                     url = getFirstUnvisitedPage();
-                    url = url.toLowerCase();
-                    //System.out.println("After getting url: Hello from " + Thread.currentThread().getName());
-                    String sql = "update Crawler.webpage set firstUnvisitedPage = ? where URL = ?";
-                    PreparedStatement statement = db.conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (url != null) {
+                try {
+                    normalizedUrl = NormalizeURL(url);
+                } catch (URISyntaxException e) {
+                    e.printStackTrace();
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                }
+                url = normalizedUrl.toLowerCase();
+                //System.out.println("After getting url: Hello from " + Thread.currentThread().getName());
+                String sql = "update Crawler.webpage set firstUnvisitedPage = ? where URL = ?";
+                PreparedStatement statement = null;
+                try {
+                    statement = db.conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                try {
                     statement.setBoolean(1, true);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                try {
                     statement.setString(2, url);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                try {
                     statement.execute();
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
 
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
 
-            try {
-                if (!compareInsensitivelyHash(pagesVisited,NormalizeURL(url))) {
+                if (!compareInsensitivelyHash(pagesVisited, normalizedUrl)) {
                     boolean b = false;
                     try {
                         b = CheckRobotTxt(url);
@@ -436,17 +502,7 @@ public class CrawlerTest implements Runnable {
                         e.printStackTrace();
                     }
                 }
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
             }
-
-
-            // check values
-           // for (Object aPagesVisited : pagesVisited) {
-               // System.out.println("Value: " + aPagesVisited + " ");
-            //}
         }
     }
 
