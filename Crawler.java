@@ -23,7 +23,7 @@ import org.jsoup.select.Elements;
 public class Crawler implements Runnable {
 
 
-    private static int maxPagesNumber ;
+    private static int maxPagesNumber = 17;
     private Set<String> pagesVisited = new HashSet<String>();
     private List<String> pagesToVisit = new LinkedList<String>();
     private HashMap disallowListCache = new HashMap();
@@ -505,7 +505,6 @@ public class Crawler implements Runnable {
             }
         }
     }
-
 }
 
 
