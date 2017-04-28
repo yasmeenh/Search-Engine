@@ -50,7 +50,7 @@ public class Crawler implements Runnable {
                 }
                 //JsoupConnection(seeds[i]);
                 ///////*****************************************************************************************************//
-                saveHTMLInFile(seeds[i]);
+                saveHTMLInFile(seeds[i],0);
                 ///////****************************************************************************************************//
 
             }
@@ -202,10 +202,10 @@ public class Crawler implements Runnable {
     }
 
     ////////////////************************Tasneem change the query so that if the url there don't write it nether get error***************//
-    private void insertInDatabase(String URL) throws SQLException {
+    private void insertInDatabase(String URL,int outlinks,int inlinks) throws SQLException {
         String sql;
 
-        sql = "INSERT  INTO  `Crawler`.`webpage` " + "(`URL`,`firstUnvisitedPage`) VALUES " + "(?,?);";
+        sql = "INSERT  INTO  `Crawler`.`webpage` " + "(`URL`,`firstUnvisitedPage`,`Outlink`,`Inlink`) VALUES " + "(?,?,?,?);";
         //create the prepared statement
         PreparedStatement statement = db.conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         //initialize prepared statement parameters
@@ -214,6 +214,9 @@ public class Crawler implements Runnable {
         statement.setString(1, URL);
         //statement.setString(2, this.htmlDocument.toString());
         statement.setBoolean(2, false);
+        statement.setInt(3, outlinks);
+        statement.setInt(4, inlinks);
+
         //Executes the SQL statement in this PreparedStatement object, which may be any kind of SQL statement.
         //The execute method returns a boolean to indicate the form of the first result.
         //true if the first result is a ResultSet object; false if the first result is an update count or there is no result
@@ -254,14 +257,15 @@ public class Crawler implements Runnable {
     }
 
     ///////////**************************Tasneem changes here 1.check if the url found and work before save it at database 2.then if it is ok save it and write file
-    private void saveHTMLInFile(String url) throws IOException, SQLException {
+    private void saveHTMLInFile(String url,int Inlinks) throws IOException, SQLException {
 
         if (url != null) {
             Document ss = JsoupConnection(url);
             if (ss != null /*&& ss.toString().matches(".*\\<[^>]+>.*")*/) {
+                Elements linksOnPage = ss.select("a[href]");
                 String s = ss.toString();
-                insertInDatabase(url);
-                System.out.print("Thread no. " + Thread.currentThread().getName() + " ");
+                insertInDatabase(url,linksOnPage.size(),Inlinks);
+                System.out.print("Thread  " + Thread.currentThread().getName() + " ");
                 System.out.println("writes file no. " + getID(url));
                 int id = getID(url);
                 FileWriter writer = new FileWriter(String.valueOf(id), true);
@@ -343,10 +347,17 @@ public class Crawler implements Runnable {
 
                         pagesToVisit.add(normalized);
                         try {
-                            saveHTMLInFile(normalized);
+                            saveHTMLInFile(normalized,1);
                         } catch (SQLException e) {
                             e.printStackTrace();
                         }
+                        System.out.print("Yes :)");
+
+                    }
+                    else if(compareInsensitivelyHash(pagesVisited, normalized))
+                    {
+                        updateInlinks(normalized);
+                        System.out.print("No :(");
 
                     }
                 }
@@ -365,6 +376,56 @@ public class Crawler implements Runnable {
         }
         rs.close();
     }
+
+
+    public int selectInlinks(String url) throws SQLException {
+
+        String sql = "Select Inlink FROM `Crawler`.`webpage` WHERE URL = '" + url + "' ";
+        Statement st = db.conn.createStatement();
+        ResultSet rs = st.executeQuery(sql);
+
+        int inlinks = 0;
+        while (rs.next()) {
+
+            inlinks = rs.getInt("Inlink");
+        }
+        // System.out.println("url: " + url + "  id: " + id);
+        rs.close();
+        return inlinks;
+    }
+
+
+    public void updateInlinks(String url) throws SQLException, IOException {
+        int inlinks=selectInlinks(url);
+        String sql = "UPDATE Crawler.webpage SET Inlink = ?, pageRank = ? where URL = ?";
+        PreparedStatement statement = null;
+        try {
+            statement = db.conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        try {
+            statement.setInt(1,inlinks+1 );
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        try {
+            statement.setInt(2,inlinks+1 );
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        try {
+            statement.setString(3, url);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        try {
+            statement.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public void Update() throws SQLException, IOException {
         String sql = "Select * FROM `Crawler`.`webpage` ";
@@ -414,6 +475,11 @@ public class Crawler implements Runnable {
         String url = null, normalizedUrl = null;
         int stopNumber = getMaxPagesNumber();
 
+        try {
+            stopNumber += getNoOfVisitedPages();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
 
         while (!pagesToVisit.isEmpty() && pagesVisited.size() < stopNumber) {
@@ -500,6 +566,11 @@ public class Crawler implements Runnable {
             }
         }
     }
+    // check values
+    // for (Object aPagesVisited : pagesVisited) {
+    // System.out.println("Value: " + aPagesVisited + " ");
+    //}
+
 }
 
 
