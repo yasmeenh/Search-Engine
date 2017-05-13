@@ -202,10 +202,10 @@ public class Crawler implements Runnable {
     }
 
     ////////////////************************Tasneem change the query so that if the url there don't write it nether get error***************//
-    private void insertInDatabase(String URL,int outlinks,int inlinks) throws SQLException {
+    private void insertInDatabase(String URL,int outlinks,int inlinks,String title) throws SQLException {
         String sql;
 
-        sql = "INSERT  INTO  `Crawler`.`webpage` " + "(`URL`,`firstUnvisitedPage`,`Outlink`,`Inlink`) VALUES " + "(?,?,?,?);";
+        sql = "INSERT  INTO  `Crawler`.`webpage` " + "(`URL`,`firstUnvisitedPage`,`Outlink`,`Inlink`,`Title`) VALUES " + "(?,?,?,?,?);";
         //create the prepared statement
         PreparedStatement statement = db.conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         //initialize prepared statement parameters
@@ -216,6 +216,7 @@ public class Crawler implements Runnable {
         statement.setBoolean(2, false);
         statement.setInt(3, outlinks);
         statement.setInt(4, inlinks);
+        statement.setString(5, title);
 
         //Executes the SQL statement in this PreparedStatement object, which may be any kind of SQL statement.
         //The execute method returns a boolean to indicate the form of the first result.
@@ -259,12 +260,15 @@ public class Crawler implements Runnable {
     ///////////**************************Tasneem changes here 1.check if the url found and work before save it at database 2.then if it is ok save it and write file
     private void saveHTMLInFile(String url,int Inlinks) throws IOException, SQLException {
 
+    	System.out.println(url);
         if (url != null) {
-            Document ss = JsoupConnection(url);
+        	Document ss = Jsoup.connect(url).get();
+          //  Document ss = JsoupConnection(url);
             if (ss != null /*&& ss.toString().matches(".*\\<[^>]+>.*")*/) {
                 Elements linksOnPage = ss.select("a[href]");
+
                 String s = ss.toString();
-                insertInDatabase(url,linksOnPage.size(),Inlinks);
+                insertInDatabase(url,linksOnPage.size(),Inlinks,ss.title());
                 System.out.print("Thread  " + Thread.currentThread().getName() + " ");
                 System.out.println("writes file no. " + getID(url));
                 int id = getID(url);
