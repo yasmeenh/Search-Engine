@@ -54,7 +54,7 @@
 			var $text=$(searchtext);
 			$searchform.submit(function(e) {
                 e.preventDefault();
-				//document.getElementById("content").innerHTML = "";
+				document.getElementById("slideshow-container").innerHTML = "";
 
 				if($text.val()[0]=='"')
 				{
@@ -69,7 +69,11 @@
 		$slidecontainer.append('<p id="decleared">'+data.words+'     '+'</p> <br> <br> <br>');
 		}
 				});
-				socket.emit("getresult",$text.val(),function(callback){
+				socket.on("check",function(data){
+				socket.emit("find",data);
+				})
+			
+			socket.emit("getresult",$text.val(),function(callback){
 				total=callback;
 				console.log(total);
 				});
