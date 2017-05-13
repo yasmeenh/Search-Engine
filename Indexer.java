@@ -7,13 +7,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
-
-import org.apache.lucene.util.IOUtils;
 import org.jsoup.Jsoup;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
@@ -29,12 +25,12 @@ class Saveatdatabase implements Runnable {
 	ArrayList<Word> w;
 	Map<String,Vector<Integer>> pos;
 	int urlid;
-
+	boolean updated;
 	
-	public Saveatdatabase(ArrayList<Word> w1,  Map<String,Vector<Integer>> pos1,int urlid1)
+	public Saveatdatabase(ArrayList<Word> w1, boolean update,int urlid1)
 	{
 		w=w1;
-		pos=pos1;
+		updated=update;
 		urlid=urlid1;
 		
 	}
@@ -43,42 +39,55 @@ class Saveatdatabase implements Runnable {
 	{
 		 String url = "jdbc:mysql://localhost:3306/";
 		 String user = "root";
-	     String password = "";
+	     String password = "1";
 	     Class.forName("com.mysql.jdbc.Driver").newInstance();
          Connection con = DriverManager.getConnection(url, user, password);
          return con;
 	}
 	
 	public void run () {
-		
-	
 	
 		 if(Thread.currentThread().getName().equals("thread1"))
 		 {
-			// System.out.println("I am thtrid 1 ok!");
+			
 			 Statement stt = null;
 			 Connection con=null;
 			    try
 		        {
 		           con=connectToDatabase(); 
 		             stt = con.createStatement();
-		             stt.execute("USE Crawler");
+		             stt.execute("USE crawler");
 		        }
 			    catch (Exception e)
 			    {
 			    	e.printStackTrace();
 			    }
-		 for (int i=0;i<w.size()/4;i++)
-		 {
-		     try {
-		    	 stt.execute("INSERT IGNORE INTO `indexer`(`word`, `type`, `repeated`, `url`, `position`, `steamword`) VALUES ('"+w.get(i).word+"', '"+w.get(i).type+"', '"+w.get(i).repeated+"','"+w.get(i).url+"', '"+w.get(i).position+"','"+w.get(i).steamword+"' );");
+			   
+			    for (int i=0;i<w.size()/4;i++)
+		    	{
+		    		try {
+		    			stt.execute("INSERT INTO `indexer` (`word`, `type`, `repeated`, `url`, `position`,"
+		    					+ " `steamword`,`updated`) VALUES ('"+w.get(i).word+"', '"+w.get(i).type
+		    					+"', '"+w.get(i).repeated+"','"+w.get(i).url+"', '"+w.get(i).position
+		    					+"','"+w.get(i).steamword+"',"+w.get(i).updated+" ) ON DUPLICATE KEY UPDATE "
+		    							+ "`updated`="+w.get(i).updated+";");
+		    	//	System.out.println("yes");
+		    		} catch (SQLException e) {
+		    			System.out.println("error");
+		    			e.printStackTrace();
+		    			}
+		    	
+					}
+		    	if(updated)
+		    	{
+		    		try {
+						stt.execute("DELETE FROM `indexer` WHERE `updated`='0'");
+						stt.execute("UPDATE `indexer` SET `updated`='0' WHERE 1");
 					} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		    
-		 }
-		 //System.out.println("I am Done 1 ok!");
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+		    	}
 		 }
 		 
 		 if(Thread.currentThread().getName().equals("thread2"))
@@ -90,7 +99,7 @@ class Saveatdatabase implements Runnable {
 		        {
 		           con=connectToDatabase(); 
 		             stt = con.createStatement();
-		             stt.execute("USE Crawler");
+		             stt.execute("USE crawler");
 		        }
 			    catch (Exception e)
 			    {
@@ -98,14 +107,30 @@ class Saveatdatabase implements Runnable {
 			    }
 		 for (int i=w.size()/4;i<(2*w.size())/4;i++)
 		 {
-		     try {
-		    	 stt.execute("INSERT IGNORE INTO `indexer`(`word`, `type`, `repeated`, `url`, `position`, `steamword`) VALUES ('"+w.get(i).word+"', '"+w.get(i).type+"', '"+w.get(i).repeated+"','"+w.get(i).url+"', '"+w.get(i).position+"','"+w.get(i).steamword+"' );");
+			 try {
+	    			stt.execute("INSERT INTO `indexer` (`word`, `type`, `repeated`, `url`, `position`,"
+	    					+ " `steamword`,`updated`) VALUES ('"+w.get(i).word+"', '"+w.get(i).type
+	    					+"', '"+w.get(i).repeated+"','"+w.get(i).url+"', '"+w.get(i).position+
+	    					"','"+w.get(i).steamword+"',"+w.get(i).updated
+	    					+" ) ON DUPLICATE KEY UPDATE `updated`="+w.get(i).updated+";");
+	    		//System.out.println("yes");
+	    		} catch (SQLException e) {
+	    			System.out.println("error");
+	    			e.printStackTrace();
+	    			}
+	    	
+				}
+	    	if(updated)
+	    	{
+	    		try {
+					stt.execute("DELETE FROM `indexer` WHERE `updated`='0'");
+					stt.execute("UPDATE `indexer` SET `updated`='0' WHERE 1");
 				} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		    
-		 }
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+	    	}
+		 
 		 //System.out.println("I am Done 2 ok!");
 		 }
 		 
@@ -118,7 +143,7 @@ class Saveatdatabase implements Runnable {
 		        {
 		           con=connectToDatabase(); 
 		             stt = con.createStatement();
-		             stt.execute("USE Crawler");
+		             stt.execute("USE crawler");
 		        }
 			    catch (Exception e)
 			    {
@@ -126,14 +151,29 @@ class Saveatdatabase implements Runnable {
 			    }
 		 for (int i=(2*w.size())/4;i<(3*w.size())/4;i++)
 		 {
-		     try {
-		    	 stt.execute("INSERT IGNORE INTO `indexer`(`word`, `type`, `repeated`, `url`, `position`, `steamword`) VALUES ('"+w.get(i).word+"', '"+w.get(i).type+"', '"+w.get(i).repeated+"','"+w.get(i).url+"', '"+w.get(i).position+"','"+w.get(i).steamword+"' );");
-					} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		    
-		 }
+			 try {
+	    			stt.execute("INSERT INTO `indexer` (`word`, `type`, `repeated`, `url`, `position`, "
+	    					+ "`steamword`,`updated`) VALUES ('"+w.get(i).word+"', '"+w.get(i).type
+	    					+"', '"+w.get(i).repeated+"','"+w.get(i).url+"', '"+w.get(i).position
+	    					+"','"+w.get(i).steamword+"',"+w.get(i).updated+" ) ON DUPLICATE KEY "
+	    							+ "UPDATE `updated`="+w.get(i).updated+";");
+	    		//System.out.println("yes");
+	    		} catch (SQLException e) {
+	    			System.out.println("error");
+	    			e.printStackTrace();
+	    			}
+	    	
+				}
+	    	if(updated)
+	    	{
+	    		try {
+					stt.execute("DELETE FROM `indexer` WHERE `updated`='0'");
+					stt.execute("UPDATE `indexer` SET `updated`='0' WHERE 1");
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+	    	}
 		 //System.out.println("I am Done 3 ok!");
 		 }
 		 
@@ -146,7 +186,7 @@ class Saveatdatabase implements Runnable {
 		        {
 		           con=connectToDatabase(); 
 		             stt = con.createStatement();
-		             stt.execute("USE Crawler");
+		             stt.execute("USE crawler");
 		        }
 			    catch (Exception e)
 			    {
@@ -154,14 +194,29 @@ class Saveatdatabase implements Runnable {
 			    }
 		 for (int i=(3*w.size())/4;i<w.size();i++)
 		 {
-		     try {
-				stt.execute("INSERT IGNORE INTO `indexer`(`word`, `type`, `repeated`, `url`, `position`, `steamword`) VALUES ('"+w.get(i).word+"', '"+w.get(i).type+"', '"+w.get(i).repeated+"','"+w.get(i).url+"', '"+w.get(i).position+"','"+w.get(i).steamword+"' );");
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		    
-		 }
+			 try {
+	    			stt.execute("INSERT INTO `indexer` (`word`, `type`, `repeated`, `url`, `position`"
+	    					+ ", `steamword`,`updated`) VALUES ('"+w.get(i).word+"', '"+w.get(i).type
+	    					+"', '"+w.get(i).repeated+"','"+w.get(i).url+"', '"+w.get(i).position
+	    					+"','"+w.get(i).steamword+"',"+w.get(i).updated+" ) ON DUPLICATE KEY"
+	    							+ " UPDATE `updated`="+w.get(i).updated+";");
+	    		//System.out.println("yes");
+	    		} catch (SQLException e) {
+	    		//	System.out.println("error");
+	    			e.printStackTrace();
+	    			}
+	    	
+				}
+	    	if(updated)
+	    	{
+	    		try {
+					stt.execute("DELETE FROM `indexer` WHERE `updated`='0'");
+					stt.execute("UPDATE `indexer` SET `updated`='0' WHERE 1");
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+	    	}
 		 //System.out.println("I am Done  ok!");
 		 }
 
@@ -174,15 +229,16 @@ public class Indexer implements Runnable {
      //Save not stoppting words and this numbers
     static Map<String,Integer> StopWord = new TreeMap<String,Integer>();//Save stoppting words and this numbers
     static Vector<Integer> allurlid;
-    
-	public Indexer() {
+    static boolean updated;
+	public Indexer(boolean update) {
 		// TODO Auto-generated constructor stub
+		updated=update;
 	}
 	
 	public  void run() {
 		// TODO Auto-generated method stub
 		//*****create statement and connection to database**************//
-		System.out.println(Thread.currentThread().getName());
+		//System.out.println(Thread.currentThread().getName());
 
 	        if(Thread.currentThread().getName().equals("index1"))
 	        {
@@ -199,7 +255,7 @@ public class Indexer implements Runnable {
 			    }
 			
 				try {
-					stt.execute("USE Crawler");
+					stt.execute("USE crawler");
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -211,11 +267,12 @@ public class Indexer implements Runnable {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-		        int totalnum=getRows(resultSet);
+		      //  int totalnum=200;
+				int totalnum=getRows(resultSet);
 		    // totalnum=10;
 		        int finish=totalnum;
 	        	finish=totalnum/2;
-	        	for(int k=1;k<=totalnum/2;k++)
+	        	for(int k=1;k<=(totalnum/2)-1;k++)
 	    		{
 	    			//String file= String.valueOf(k);
 	    		    ArrayList<Word> wordsList = new ArrayList<Word>();
@@ -265,7 +322,7 @@ public class Indexer implements Runnable {
 	    			 steam=stemwordsListbold.get(entry.getKey());
 	    			 position=WordsPositionbold.get(entry.getKey()).toString();
 	    		// pos.put(entry.getKey(),WordsPositionbold.get(entry.getKey()));
-	    			 all = new Word(entry.getKey(),"bold",k,position,steam,rep);
+	    			 all = new Word(entry.getKey(),"bold",k,position,steam,rep,updated);
 	    				wordsList.add(all);
 	    		 }
 	    		index=0;
@@ -275,7 +332,7 @@ public class Indexer implements Runnable {
 	    			 steam=new String(stemwordsListbody.get(entry.getKey()));
 	    			 position=new String(WordsPositionbody.get(entry.getKey()).toString());
 	    			// pos.put(entry.getKey(),WordsPositionbody.get(entry.getKey()));
-	    			 all = new Word(entry.getKey(),"body",k,position,steam,rep);
+	    			 all = new Word(entry.getKey(),"body",k,position,steam,rep,updated);
 	    			 wordsList.add(all);
 	    		 }
 	    		index=0;
@@ -284,8 +341,7 @@ public class Indexer implements Runnable {
 	    			 rep=entry.getValue();
 	    			 position=new String(WordsPositiontitle.get(entry.getKey()).toString());
 	    			 steam=new String(stemwordsListtitle.get(entry.getKey()));
-	    			 //pos.put(entry.getKey(),WordsPositiontitle.get(entry.getKey()));
-	    			 all = new Word(entry.getKey(),"title",k,position,steam,rep);
+	    			 all = new Word(entry.getKey(),"title",k,position,steam,rep,updated);
 	    			 wordsList.add(all);
 	    		 }
 	    		for(int i=0;i<WordsPositiontitle.size();i++)
@@ -295,14 +351,12 @@ public class Indexer implements Runnable {
 	    		 //***********************************//
 	    		 //*************save it to database***************//
 	    		
-	    		System.out.println("Start write at database");
-	    		//saveToDatabase(wordsList,WordsPositiontitle,k+1,stt);
-	    		
-	            
-	    		Thread t0 = new Thread (new Saveatdatabase(wordsList,pos,k));
-	    		Thread t1 = new Thread (new Saveatdatabase(wordsList,pos,k));
-	    		Thread t2 = new Thread (new Saveatdatabase(wordsList,pos,k));
-	    		Thread t3 = new Thread (new Saveatdatabase(wordsList,pos,k));
+	    		//System.out.println("Start write at database");
+	    	     
+	    		Thread t0 = new Thread (new Saveatdatabase(wordsList,updated,k));
+	    		Thread t1 = new Thread (new Saveatdatabase(wordsList,updated,k));
+	    		Thread t2 = new Thread (new Saveatdatabase(wordsList,updated,k));
+	    		Thread t3 = new Thread (new Saveatdatabase(wordsList,updated,k));
 	    		
 	    		t0.setName("thread1");
 	    		t1.setName("thread2");
@@ -314,16 +368,16 @@ public class Indexer implements Runnable {
 	    		t3.start();
 	    		
 	    		try {
-	    			t0.join();
-	    			t1.join();
-	    			t2.join();
-	    			t3.join();
-	    		} catch (InterruptedException e) {
-	    			// TODO Auto-generated catch block
-	    			e.printStackTrace();
-	    		}
+					t0.join();
+					t1.join();
+					t2.join();
+					t3.join();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 	    		
-	    		System.out.println("Done");
+	    		//System.out.println("Done");
 	    		
 	    		}
 	        	try {
@@ -349,7 +403,7 @@ public class Indexer implements Runnable {
 			    }
 			
 				try {
-					stt.execute("USE Crawler");
+					stt.execute("USE crawler");
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -366,7 +420,7 @@ public class Indexer implements Runnable {
 		        int finish=totalnum;
 	//***************************************************************//
 	    //********convert html to text and save it at finalresult[0] for heading and finalresult[1] for body****/////
-		for(int k=totalnum/2;k<=totalnum;k++)
+		for(int k=(totalnum/2);k<=totalnum;k++)
 		{
 			//String file= String.valueOf(k);
 		    ArrayList<Word> wordsList = new ArrayList<Word>();
@@ -416,7 +470,7 @@ public class Indexer implements Runnable {
 			 steam=stemwordsListbold.get(entry.getKey());
 			 position=WordsPositionbold.get(entry.getKey()).toString();
 		// pos.put(entry.getKey(),WordsPositionbold.get(entry.getKey()));
-			 all = new Word(entry.getKey(),"bold",k,position,steam,rep);
+			 all = new Word(entry.getKey(),"bold",k,position,steam,rep,updated);
 				wordsList.add(all);
 		 }
 		index=0;
@@ -426,7 +480,7 @@ public class Indexer implements Runnable {
 			 steam=new String(stemwordsListbody.get(entry.getKey()));
 			 position=new String(WordsPositionbody.get(entry.getKey()).toString());
 			// pos.put(entry.getKey(),WordsPositionbody.get(entry.getKey()));
-			 all = new Word(entry.getKey(),"body",k,position,steam,rep);
+			 all = new Word(entry.getKey(),"body",k,position,steam,rep,updated);
 			 wordsList.add(all);
 		 }
 		index=0;
@@ -435,8 +489,7 @@ public class Indexer implements Runnable {
 			 rep=entry.getValue();
 			 position=new String(WordsPositiontitle.get(entry.getKey()).toString());
 			 steam=new String(stemwordsListtitle.get(entry.getKey()));
-			 //pos.put(entry.getKey(),WordsPositiontitle.get(entry.getKey()));
-			 all = new Word(entry.getKey(),"title",k,position,steam,rep);
+			 all = new Word(entry.getKey(),"title",k,position,steam,rep,updated);
 			 wordsList.add(all);
 		 }
 		for(int i=0;i<WordsPositiontitle.size();i++)
@@ -446,13 +499,13 @@ public class Indexer implements Runnable {
 		 //***********************************//
 		 //*************save it to database***************//
 		
-		System.out.println("Start write at database");
+		//System.out.println("Start write at database");
 		//saveToDatabase(wordsList,WordsPositiontitle,k+1,stt);
 		
-		Thread t0 = new Thread (new Saveatdatabase(wordsList,pos,k));
-		Thread t1 = new Thread (new Saveatdatabase(wordsList,pos,k));
-		Thread t2 = new Thread (new Saveatdatabase(wordsList,pos,k));
-		Thread t3 = new Thread (new Saveatdatabase(wordsList,pos,k));
+		Thread t0 = new Thread (new Saveatdatabase(wordsList,updated,k));
+		Thread t1 = new Thread (new Saveatdatabase(wordsList,updated,k));
+		Thread t2 = new Thread (new Saveatdatabase(wordsList,updated,k));
+		Thread t3 = new Thread (new Saveatdatabase(wordsList,updated,k));
 		
 		t0.setName("thread1");
 		t1.setName("thread2");
@@ -473,7 +526,8 @@ public class Indexer implements Runnable {
 			e.printStackTrace();
 		}
 		
-		System.out.println("Done");
+		
+		//System.out.println("Done");
 		
 		}
 		//***********close connection************//
@@ -544,9 +598,7 @@ public class Indexer implements Runnable {
 			s[1]=body;
 			s[2]=title;
 			s[3]=img;
-			s[0]=s[0].replaceAll("[^A-Za-z]"," ");
-			s[1]=s[1].replaceAll("[^A-Za-z]"," ");
-			s[2]=s[2].replaceAll("[^A-Za-z]"," ");
+
 		} finally {
 		    inputStream.close();
 		}
@@ -572,7 +624,7 @@ public class Indexer implements Runnable {
 	{
 		 String url = "jdbc:mysql://localhost:3306/";
 		 String user = "root";
-	     String password = "";
+	     String password = "1";
 	     Class.forName("com.mysql.jdbc.Driver").newInstance();
          Connection con = DriverManager.getConnection(url, user, password);
          return con;
@@ -620,7 +672,7 @@ public class Indexer implements Runnable {
      "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
      "buyers", "tried", "said,", "value", "principle.", "forces", "sent:", 
      "is,", "was", "like", "tmus", "layout", "thanks", "thankyou",
-     "hello", "bye", "rise", "fell", "fall", "psqft.", "http://"};
+     "hello", "bye", "rise", "fell","aa","aaa","aaaal","aaact","aaafd","aaafk","aabb","aan", "fall", "psqft.", "http://"};
      Integer ONE = 1;
      String[] words = Words.split("[\\W]");
      //************************//
