@@ -3,6 +3,11 @@
  * and open the template in the editor.
  */
 
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
 import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -260,14 +265,13 @@ public class Crawler implements Runnable {
     ///////////**************************Tasneem changes here 1.check if the url found and work before save it at database 2.then if it is ok save it and write file
     private void saveHTMLInFile(String url,int Inlinks) throws IOException, SQLException {
 
-    	System.out.println(url);
         if (url != null) {
-        	Document ss = Jsoup.connect(url).get();
-          //  Document ss = JsoupConnection(url);
+            Document ss = JsoupConnection(url);
             if (ss != null /*&& ss.toString().matches(".*\\<[^>]+>.*")*/) {
                 Elements linksOnPage = ss.select("a[href]");
 
                 String s = ss.toString();
+                s = s.replaceAll("[^\\x00-\\x7F]", "");
                 insertInDatabase(url,linksOnPage.size(),Inlinks,ss.title());
                 System.out.print("Thread  " + Thread.currentThread().getName() + " ");
                 System.out.println("writes file no. " + getID(url));
@@ -279,6 +283,7 @@ public class Crawler implements Runnable {
 
             }
         }
+
     }
 
 
@@ -291,7 +296,7 @@ public class Crawler implements Runnable {
 
             Document doc = JsoupConnection(url);
             if (doc != null) {
-                getLinks(doc);
+                getLinks(url,doc);
                 synchronized (pagesToVisit) {
 
                     int index = pagesToVisit.indexOf(url);
@@ -334,8 +339,9 @@ public class Crawler implements Runnable {
         return numberRow;
     }
 
-    private void getLinks(Document doc) throws SQLException, IOException, URISyntaxException {
+    private void getLinks(String url,Document doc) throws SQLException, IOException, URISyntaxException {
 
+        int outbounds=0;
 
         Elements linksOnPage = doc.select("a[href]");
         //  System.out.println("Found (" + linksOnPage.size() + ") links");
@@ -351,23 +357,27 @@ public class Crawler implements Runnable {
 
                         pagesToVisit.add(normalized);
                         try {
-                            saveHTMLInFile(normalized,1);
+                             saveHTMLInFile(normalized,1);
                         } catch (SQLException e) {
                             e.printStackTrace();
                         }
-                        System.out.print("Yes :)");
+                       // System.out.print("Yes :)");
 
                     }
                     else if(compareInsensitivelyHash(pagesVisited, normalized))
                     {
                         updateInlinks(normalized);
-                        System.out.print("No :(");
+                       // System.out.print("No :(");
 
                     }
+
                 }
             }
         }
     }
+
+
+
 
     public void selectVisitedPagesFromDatabase() throws SQLException {
         String sql = "Select * FROM `Crawler`.`webpage` WHERE firstUnvisitedPage = 1 ";
@@ -413,11 +423,14 @@ public class Crawler implements Runnable {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
+
         try {
-            statement.setInt(2,inlinks+1 );
+            statement.setInt(2, inlinks+1);
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         try {
             statement.setString(3, url);
         } catch (SQLException e) {
@@ -477,13 +490,11 @@ public class Crawler implements Runnable {
     public void run() {
 
         String url = null, normalizedUrl = null;
-        int stopNumber = getMaxPagesNumber();
-
-        try {
-            stopNumber += getNoOfVisitedPages();
+        int stopNumber = getMaxPagesNumber();/*try {
+            stopNumber -= getNoOfVisitedPages();
         } catch (SQLException e) {
             e.printStackTrace();
-        }
+        }*/
 
 
         while (!pagesToVisit.isEmpty() && pagesVisited.size() < stopNumber) {
