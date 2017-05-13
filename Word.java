@@ -7,8 +7,9 @@ public class Word {
 	String position;
 	String steamword;
 	int repeated;
+	boolean updated;
 	
-	public Word(String word, String type, Integer url,String position,String steam,int rep) {
+	public Word(String word, String type, Integer url,String position,String steam,int rep,boolean update) {
 		super();
 		this.word = word;
 		this.type = type;
@@ -16,6 +17,7 @@ public class Word {
 		this.position = position;
 		this.repeated = rep;
 		this.steamword=steam;
+		this.updated=update;
 		
 	}
 	public Word(){
