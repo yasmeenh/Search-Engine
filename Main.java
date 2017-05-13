@@ -24,14 +24,15 @@ public class Main {
 
             if (update) {
                 update = false;
-                ct.setMaxPagesNumber(ct.getNoOfVisitedPages() + 17);
+                ct.setMaxPagesNumber(ct.getNoOfVisitedPages() + 20);
                 ct.Update();
 
             } else
-                ct.setMaxPagesNumber(17);
+                ct.setMaxPagesNumber(20);
 
 
             if (ct.isEmptyDatabase()) {
+                System.out.print("emptyyyyyyyyyyyyyyyy");
                 String[] seeds = {"https://en.wikipedia.org/wiki/Main_Page", "http://dmoztools.net/", "http://stackexchange.com/", "http://www.webopedia.com/", "https://en.wikipedia.org/wiki/Cyclopedia", "https://www.amazon.com/", "https://www.facebook.com/", "http://www.wikihow.com/Main-Page", "https://www.pinterest.com/", "https://www.quora.com/", "http://eresources.nlb.gov.sg/infopedia/", "https://www.bing.com/"};
 
                 int noOfSeeds = ct.setSeeds(seeds);
@@ -42,7 +43,7 @@ public class Main {
             }
 
 
-            System.out.println("Please enter the number of Threads you want :)");
+            System.out.println("Please enter the number of Threads you want ");
             int noOfThreads = scanner.nextInt();
 
             T0.setName("Main Thread");
@@ -55,20 +56,15 @@ public class Main {
                 T[i] = new Thread(ct);
                 T[i].setName(Integer.toString(i + 1));
                 T[i].start();
-
             }
 
-            for (int i = 0; i < noOfThreads; i++) {
-
-                T[i].join();
-
-            }
-            System.out.println("Iam waiting!!!! :( :(");
+            System.out.println("Iam waiting!!!!");
 
             //*****************************************************************//
             //*******************Create 2 threads of indexer**************//
-            Indexer i1 = new Indexer();
-            Indexer i2 = new Indexer();
+        	
+            Indexer i1 = new Indexer(update);
+            Indexer i2 = new Indexer(update);
             Thread Indexthread1 = new Thread(i1);
             Thread Indexthread2 = new Thread(i2);
 
@@ -76,12 +72,15 @@ public class Main {
             Indexthread1.setName("index1");
             Indexthread2.setName("index2");
             Indexthread1.start();
-            Indexthread2.start();
-            Indexthread1.join();
-            Indexthread2.join();
+           // Indexthread2.start();
+           // Indexthread1.join();
+           // Indexthread2.join();
             T0.sleep(180000000);   //259200000
             update = true;
-
+            //Crawlerthread.start();
+            //System.out.println("Crawler start indexer wait");
+            //	System.out.println("Indexer start ");
+            //Indexthread.start();
         }
     }
 
