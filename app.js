@@ -108,6 +108,7 @@ pool.getConnection(function(error,conn){
 socket.on("phrase",function(data){
 	var word=data.replace('"','');
 	word=word.split(' ');
+	var isfound=false;
 	var queryString = "SELECT * FROM `indexer`,`webpage` WHERE indexer.word='"+word[0]+"' AND indexer.url=webpage.PageID";
 conn.query(queryString, function (error,results){
 if(error)
@@ -115,22 +116,36 @@ if(error)
         else
 		{
 	for(var i=0;i<results.length;i++){
-fs.readFile(__dirname + '/public/'+results[i].url, 'utf8', function(err, data1) {
+		console.log(results[i].url);
+		socket.emit("check",{id:results[i].url,word:results[i].word, url: results[i].URL, repeated: results[i].repeated,pagerank:results[i].Inlink,type:results[i].type,phrase:data,title:results[i].Title});
+	}
+		}
+	});
+});
+socket.on('find',function(data){
+	fs.readFile(__dirname + '/public/'+data.id, 'utf8', function(err, data1) {
     console.log("readed");
 	if (err) {
         return console.log(err);
     }
-    html = data1.toString();	
-	if(html.includes(data.replace('"',''))>-1)
+    html = data1.toString();
+var p=	data.phrase.replace('"','');
+ p=	p.replace('"','');
+console.log(p+"			"+"			"+html.includes(p));
+	if(html.includes(p)>-1)
 	{
-		socket.emit("found",{id:results[i].url,word:results[i].word, url: results[i].URL, repeated: results[i].repeated,pagerank:results[i].Inlink,type:results[i].type});
+		isfound=true;
+	}
+	if(isfound){
+		console.log(data);
+socket.emit("found",data);
 	}
 	
 });
-	}
-		}
+
+	
 });
-});
+
 
 	
 	
